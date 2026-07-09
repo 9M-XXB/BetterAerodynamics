@@ -1,9 +1,10 @@
-# Example Mod
+# Better Aerodymanics
 
-## Setup
+## What it does
 
-For setup instructions, please see the [Fabric Documentation page](https://docs.fabricmc.net/develop/getting-started/creating-a-project#setting-up) related to the IDE that you are using.
+This is an implementation of International Standard Atomosphere (ISA) condition and using panel method to better calculate the aerodynamic forces generated when flying with an elytra. 
 
-## License
+## WHY
 
-This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
+This is what happens when an aero student felt crazy.
+

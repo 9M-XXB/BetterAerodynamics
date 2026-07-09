@@ -29,7 +29,8 @@ public class ElytraPhysics {
         15.0, 5.0, 0.75, 0.010, 1.3, 0.261799, 800.0);
     private static final AirfoilProfile AIRFOIL = new AirfoilProfile("2412", 80);
     private static final double LBF_TO_MC = 0.005;
-    private static final double MIN_RE = 10_000;  // minimum Reynolds number for BL validity
+    private static final double MIN_RE = 10_000;
+    private static final double GRAVITY_LBF = 154.3; // 70 kg → lbf
     private static final double CHORD = Math.sqrt(15.0 / 5.0);
     /** Exaggerated ft/block — matches AtmosphereManager for consistency. */
     private static final double AERO_FT_PER_BLOCK = 112.5;
@@ -158,7 +159,7 @@ public class ElytraPhysics {
         if (tickCount % 20 == 0) LOG.info("FORCE L={} D={}lbf spd={}ft/s alpha={}", (int)lift, (int)drag, (int)speedFtS, String.format("%.2f", alpha));
 
         double dMc = drag * LBF_TO_MC;
-        double lMc = lift * LBF_TO_MC;
+        double lMc = lift * LBF_TO_MC - GRAVITY_LBF * LBF_TO_MC;
 
         // Set velocity directly — mixin already cancelled vanilla elytra
         if (horiz > 1e-3) {
