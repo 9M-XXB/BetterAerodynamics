@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CCC",
+    "CSC",
+    "CCC"
+  ],
+  "key": {
+    "C": "betteraerodynamics:carbon_fiber",
+    "S": "minecraft:slime_ball"
+  },
+  "result": {
+    "id": "betteraerodynamics:carbon_fiber_plate",
+    "count": 1
+  }
+}

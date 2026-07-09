@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "minecraft:coal_block",
+  "result": {
+    "count": 288,
+    "id": "betteraerodynamics:carbon_fiber"
+  }
+}

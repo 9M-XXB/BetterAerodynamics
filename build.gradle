@@ -18,7 +18,7 @@ loom {
 	splitEnvironmentSourceSets()
 
 	mods {
-		"modid" {
+		"betteraerodynamics" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
 		}

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "PPP",
+    "PLP",
+    "PPP"
+  ],
+  "key": {
+    "P": "betteraerodynamics:carbon_fiber_plate",
+    "L": "minecraft:leather_boots"
+  },
+  "result": {
+    "id": "betteraerodynamics:atmosphere_suit_boots",
+    "count": 1
+  }
+}

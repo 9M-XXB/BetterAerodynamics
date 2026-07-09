@@ -1,0 +1,14 @@
+{
+  "itemGroup.betteraerodynamics": "空气动力学 | Better Aerodynamics",
+  "item.betteraerodynamics.atmosphere_suit_helmet": "保压服头盔",
+  "item.betteraerodynamics.atmosphere_suit_chestplate": "保压服胸甲",
+  "item.betteraerodynamics.atmosphere_suit_leggings": "保压服护腿",
+  "item.betteraerodynamics.atmosphere_suit_boots": "保压服靴子",
+  "item.betteraerodynamics.carbon_fiber": "碳纤维",
+  "item.betteraerodynamics.carbon_fiber_plate": "碳纤维板",
+  "enchantment.betteraerodynamics.pressure_seal": "保压",
+  "death.attack.low_pressure": "%1$s 因低气压而死亡",
+  "death.attack.low_pressure.player": "%1$s 在试图逃离 %2$s 时因低气压而死亡",
+  "death.attack.high_pressure": "%1$s 因水压过高而死亡",
+  "death.attack.high_pressure.player": "%1$s 在试图逃离 %2$s 时因水压过高而死亡"
+}

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "minecraft:diamond_boots",
+    "betteraerodynamics:atmosphere_suit_boots"
+  ],
+  "result": {
+    "id": "minecraft:diamond_boots",
+    "count": 1,
+    "components": {
+      "minecraft:enchantments": {
+        "betteraerodynamics:pressure_seal": 1
+      }
+    }
+  }
+}

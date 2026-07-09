@@ -1,0 +1,14 @@
+{
+  "itemGroup.betteraerodynamics": "Air Dynamics",
+  "item.betteraerodynamics.atmosphere_suit_helmet": "Pressure Suit Helmet",
+  "item.betteraerodynamics.atmosphere_suit_chestplate": "Pressure Suit Chestplate",
+  "item.betteraerodynamics.atmosphere_suit_leggings": "Pressure Suit Leggings",
+  "item.betteraerodynamics.atmosphere_suit_boots": "Pressure Suit Boots",
+  "item.betteraerodynamics.carbon_fiber": "Carbon Fiber",
+  "item.betteraerodynamics.carbon_fiber_plate": "Carbon Fiber Plate",
+  "enchantment.betteraerodynamics.pressure_seal": "Pressure Retention",
+  "death.attack.low_pressure": "%1$s succumbed to low pressure",
+  "death.attack.low_pressure.player": "%1$s succumbed to low pressure whilst trying to escape %2$s",
+  "death.attack.high_pressure": "%1$s was crushed by water pressure",
+  "death.attack.high_pressure.player": "%1$s was crushed by water pressure whilst trying to escape %2$s"
+}
