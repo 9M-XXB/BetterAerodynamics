@@ -65,14 +65,14 @@ public class ElytraPhysics {
     // Smoother for display speed (damps oscillations)
     private static double smoothSpeedFtS;
 
-    public static void applyToPlayer(ServerLevel world, Player player) {
+    public static boolean applyToPlayer(ServerLevel world, Player player) {
         if (!player.isFallFlying()) {
             lastLiftLbf = lastDragLbf = lastSpeedFtS = 0;
             lastStalled = false;
-            return;
+            return false;
         }
 
-        Vec3 vel = player.position().subtract(player.xo, player.yo, player.zo);
+        Vec3 vel = player.getDeltaMovement();
         double rawSpeed = vel.length() * 3.28084 * 20.0;  // real SI conversion
         smoothSpeedFtS = smoothSpeedFtS * 0.85 + rawSpeed * 0.15;  // EMA smoothing
         double speedFtS = rawSpeed;  // use raw for aero (immediate response)
@@ -85,7 +85,7 @@ public class ElytraPhysics {
             if (tickCount % 20 == 0) LOG.info("SKIP low Re={} spd={}ft/s", (int)re, (int)speedFtS);
             lastLiftLbf = lastDragLbf = lastSpeedFtS = 0;
             smoothSpeedFtS = 0;
-            return;
+            return false;
         }
 
         // α = velocity pitch − look pitch (angle between wing chord and airflow)
@@ -172,7 +172,7 @@ public class ElytraPhysics {
         if (tickCount % 20 == 0) LOG.info("FORCE L={} D={}lbf spd={}ft/s alpha={}", (int)lift, (int)drag, (int)speedFtS, String.format("%.2f", alpha));
 
         // --- Apply forces in wind axes ---
-        Vec3 curVel = player.position().subtract(player.xo, player.yo, player.zo);
+        Vec3 curVel = vel;
         double speed = curVel.length();
 
         if (speed > 1e-4) {
@@ -198,6 +198,7 @@ public class ElytraPhysics {
         player.setDeltaMovement(curVel.add(0, -GRAVITY_LBF * LBF_TO_MC, 0));
     }
     if (player instanceof net.minecraft.server.level.ServerPlayer sp) sp.hurtMarked = true;
+    return true;
     }
 
     /** Linear interpolation on sorted arrays. */
