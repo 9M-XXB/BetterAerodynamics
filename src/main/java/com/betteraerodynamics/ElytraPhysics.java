@@ -7,6 +7,7 @@ import com.betteraerodynamics.aero.HessSmith;
 import com.betteraerodynamics.aero.WingPhysics;
 
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.util.Mth;
@@ -27,11 +28,15 @@ public class ElytraPhysics {
     // Wing
     private static final WingPhysics.WingConfig CONFIG = new WingPhysics.WingConfig(
         15.0, 5.0, 0.75, 0.010, 1.3, 0.261799, 800.0);
-    private static final AirfoilProfile AIRFOIL = new AirfoilProfile("2412", 80);
-    private static final double LBF_TO_MC = 0.005;
+    private static final AirfoilProfile AIRFOIL = new AirfoilProfile("2412", 80);   
     private static final double MIN_RE = 10_000;
-    private static final double GRAVITY_LBF = 154.3; // 70 kg → lbf
+    private static final double GRAVITY_LBF = 200.0;
+    private static final double LBM_TO_KG = 0.453592;
+    private static final double PLAYER_MASS_KG = GRAVITY_LBF * LBM_TO_KG;
+    private static final double LBF_TO_N = 4.44822;
+    private static final double LBF_TO_MC = LBF_TO_N / (PLAYER_MASS_KG * 20 * 20);  // convert to Minecraft units (m/tick²)
     private static final double CHORD = Math.sqrt(15.0 / 5.0);
+    private static final double RIGGING_ANGLE = 0.10;
     /** Exaggerated ft/block — matches AtmosphereManager for consistency. */
     private static final double AERO_FT_PER_BLOCK = 112.5;
 
@@ -61,9 +66,13 @@ public class ElytraPhysics {
     private static double smoothSpeedFtS;
 
     public static void applyToPlayer(ServerLevel world, Player player) {
-        if (!player.isFallFlying()) return;
+        if (!player.isFallFlying()) {
+            lastLiftLbf = lastDragLbf = lastSpeedFtS = 0;
+            lastStalled = false;
+            return;
+        }
 
-        Vec3 vel = player.getDeltaMovement();
+        Vec3 vel = player.position().subtract(player.xo, player.yo, player.zo);
         double rawSpeed = vel.length() * 3.28084 * 20.0;  // real SI conversion
         smoothSpeedFtS = smoothSpeedFtS * 0.85 + rawSpeed * 0.15;  // EMA smoothing
         double speedFtS = rawSpeed;  // use raw for aero (immediate response)
@@ -83,8 +92,8 @@ public class ElytraPhysics {
         double horiz = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
         double velPitch  = Math.atan2(-vel.y, Math.max(horiz, 1e-6));
         double lookPitch = Math.asin(-player.getLookAngle().y);
-        //double alpha = Mth.clamp(velPitch - lookPitch, -0.35, 0.35);  // ±20°
-        double alpha = velPitch - lookPitch;
+        double alpha = velPitch - lookPitch + RIGGING_ANGLE; 
+        alpha = Mth.clamp(alpha, -1.4, 1.4);                        // hard sanity bound, ~±80°
 
         // --- BL update (periodic or on large α change) ---
         tickCount++;
@@ -133,14 +142,18 @@ public class ElytraPhysics {
         boolean stalled = cachedBL != null
             && cachedBL.H[cachedBL.H.length - 1] > 2.4;
 
-        // Post-stall drop: Cl falls, Cd rises
-        if (stalled && Math.abs(alpha) > 0.01) {
-            double pastStall = Math.abs(alpha) / CONFIG.stallAngleRad() - 1.0;
-            double drop = 1.0 - Mth.clamp(pastStall * 0.6, 0.0, 0.85);
-            cl2d *= drop;
-            cd2d *= 1.0 + Mth.clamp(pastStall * 1.5, 0.0, 4.0);
-        }
+        // Post-stall: blend model coefficients toward flat-plate behavior
+        double absA = Math.abs(alpha);
+        if (absA > CONFIG.stallAngleRad()) {
+                // how far past stall we are, 0 → just stalled, 1 → fully separated (~2× stall angle)
+                double t = Mth.clamp((absA - CONFIG.stallAngleRad()) / CONFIG.stallAngleRad(), 0.0, 1.0);
 
+                double clFlat = Math.sin(alpha) * Math.cos(alpha) * 2.0;   // flat-plate lift
+                double cdFlat = 2.0 * Math.sin(absA) * Math.sin(absA);     // flat-plate drag
+
+                cl2d = cl2d * (1.0 - t) + clFlat * t;
+                cd2d = cd2d * (1.0 - t) + cdFlat * t;
+        }
         // 3D wing
         var w = com.betteraerodynamics.aero.AerodynamicsEngine.wingCoefficients(
             cl2d, cd2d, CONFIG.aspectRatio(), CONFIG.oswaldEfficiency());
@@ -158,17 +171,33 @@ public class ElytraPhysics {
 
         if (tickCount % 20 == 0) LOG.info("FORCE L={} D={}lbf spd={}ft/s alpha={}", (int)lift, (int)drag, (int)speedFtS, String.format("%.2f", alpha));
 
-        double dMc = drag * LBF_TO_MC;
-        double lMc = lift * LBF_TO_MC - GRAVITY_LBF * LBF_TO_MC;
+        // --- Apply forces in wind axes ---
+        Vec3 curVel = player.position().subtract(player.xo, player.yo, player.zo);
+        double speed = curVel.length();
 
-        // Set velocity directly — mixin already cancelled vanilla elytra
-        if (horiz > 1e-3) {
-            double newHoriz = Math.max(horiz - dMc, 0.01);
-            double scale = newHoriz / horiz;
-            player.setDeltaMovement(vel.x * scale, lMc, vel.z * scale);
-        } else {
-            player.setDeltaMovement(0, lMc, 0);
+        if (speed > 1e-4) {
+            Vec3 vHat = curVel.scale(1.0 / speed);
+
+            Vec3 liftHat;
+            if (curVel.x * curVel.x + curVel.z * curVel.z > 1e-8) {
+                Vec3 side = vHat.cross(new Vec3(0, 1, 0)).normalize();
+                liftHat = side.cross(vHat).normalize();
+            } else {
+                liftHat = new Vec3(0, 0, 1);   // pure vertical fall: degenerate case
         }
+
+        Vec3 accel = liftHat.scale(lift * LBF_TO_MC)
+                 .add(vHat.scale(-drag * LBF_TO_MC))
+                 .add(0, -GRAVITY_LBF * LBF_TO_MC, 0);
+
+        Vec3 newVel = curVel.add(accel);
+
+        player.setDeltaMovement(newVel);
+    } else {
+    // no airspeed: gravity only
+        player.setDeltaMovement(curVel.add(0, -GRAVITY_LBF * LBF_TO_MC, 0));
+    }
+    if (player instanceof net.minecraft.server.level.ServerPlayer sp) sp.hurtMarked = true;
     }
 
     /** Linear interpolation on sorted arrays. */
