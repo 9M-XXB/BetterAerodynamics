@@ -12,9 +12,9 @@ This mod provides a basic aerodynamic implementation in Minecraft for elytra. In
 
 Together with aerodynamics is the impelemtation of ISA conditions. Currently, it is set to world sea level (y=70) being sea level, and world build limit (y=320) being the height of Mt.Everest. This conversion is unique to air property calculation, with the rest aero calculation still using the standard conversion (1 block = 1 meter). This mod also provides a simple HUD showing the current height of the player with the player's vertical speed, in "aviation unit", which is feet and feet per minute. 
 
-![In Game Screenshot1](pics/2026-07-14_12.15.19.png)
-![In Game Screenshot2](pics/2026-07-14_12.15.33.png)
-![In Game Screenshot3](pics/2026-07-14_12.15.44.png)
+![In Game Screenshot1](pic/2026-07-14_12.15.19.png)
+![In Game Screenshot2](pic/2026-07-14_12.15.33.png)
+![In Game Screenshot3](pic/2026-07-14_12.15.44.png)
 
 ## WHY
 
