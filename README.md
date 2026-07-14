@@ -22,4 +22,4 @@ This is what happens when an aero student felt crazy.
 
 ## Version Download
 
-[Downloads can be found here](build/libs)
+[Downloads can be found here](build/libs) Please always use the latest version.
