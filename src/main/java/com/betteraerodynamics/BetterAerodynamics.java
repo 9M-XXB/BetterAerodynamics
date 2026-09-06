@@ -29,6 +29,8 @@ public class BetterAerodynamics implements ModInitializer {
 	public void onInitialize() {
 		LOGGER.info("Better Aerodynamics initialized (aero + HUD only)!");
 
+		com.betteraerodynamics.config.AeroConfig.load();
+
 		/*
 		// ======== COMMENTED: Items, Damage, Loot, CreativeTab ========
 
@@ -61,12 +63,13 @@ public class BetterAerodynamics implements ModInitializer {
 		});
 		*/
 
-		// /aerohud command — toggle the aero HUD display
+		// /aerohud command — toggle the aero HUD display (persisted, same as settings screen)
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			dispatcher.register(Commands.literal("aerohud")
 				.executes(ctx -> {
-					ElytraPhysics.hudEnabled = !ElytraPhysics.hudEnabled;
-					String msg = ElytraPhysics.hudEnabled ? "HUD ON" : "HUD OFF";
+					boolean newState = !com.betteraerodynamics.config.AeroConfig.hudEnabled();
+					com.betteraerodynamics.config.AeroConfig.setHudEnabled(newState);
+					String msg = newState ? "HUD ON" : "HUD OFF";
 					ctx.getSource().sendSuccess(() -> Component.literal("Aero HUD: " + msg), true);
 					return 1;
 				}));

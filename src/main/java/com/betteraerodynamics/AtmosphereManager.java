@@ -8,6 +8,7 @@ import net.minecraft.world.item.ItemStack;
 
 import com.betteraerodynamics.item.PressureSuitItem;
 import com.betteraerodynamics.enchantment.PressureSealEnchantment;
+import com.betteraerodynamics.config.AeroConfig;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
@@ -27,19 +28,13 @@ public class AtmosphereManager {
     private static final double H_TROPOPAUSE = 36089.0; // ft
     private static final double H_STRAT_20KM = 65617.0; // ft
 
-    /** Maximum altitude mapped at build height (Everest ≈ 29,031 ft). */
-    private static final double MAX_ALTITUDE_FT = 29031.0;
-
     /**
-     * Convert a raw Minecraft Y coordinate to altitude in feet,
-     * using the same linear mapping as the atmosphere model.
-     * 0 ft = sea level, ~29,031 ft = Y=320 (build height).
+     * Convert a raw Minecraft Y coordinate to altitude in feet using the
+     * user-configured conversion (see {@link AeroConfig}).
+     * Default: 0 ft at in-game sea level, 1 block = 1 m = 3.28084 ft.
      */
     public static double yToFeet(double y, int seaLevel) {
-        double top = 320.0;
-        double span = Math.max(1.0, top - seaLevel);
-        double normalized = (y - seaLevel) / span;
-        double h = normalized * MAX_ALTITUDE_FT;
+        double h = AeroConfig.yToFeet(y, seaLevel);
         return Mth.clamp(h, -2000.0, 100000.0);
     }
 

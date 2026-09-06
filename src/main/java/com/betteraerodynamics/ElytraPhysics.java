@@ -37,8 +37,6 @@ public class ElytraPhysics {
     private static final double LBF_TO_MC = LBF_TO_N / (PLAYER_MASS_KG * 20 * 20);  // convert to Minecraft units (m/tick²)
     private static final double CHORD = Math.sqrt(15.0 / 5.0);
     private static final double RIGGING_ANGLE = 0.10;
-    /** Exaggerated ft/block — matches AtmosphereManager for consistency. */
-    private static final double AERO_FT_PER_BLOCK = 112.5;
 
     // BL cache
     private static final int BL_TICKS = 10;
@@ -57,7 +55,6 @@ public class ElytraPhysics {
     private static boolean curveDirty = true;
 
     // HUD
-    public static boolean hudEnabled = true;
     public static double lastLiftLbf, lastDragLbf;
     public static boolean lastStalled;
     public static double lastSpeedFtS, lastCd0;
