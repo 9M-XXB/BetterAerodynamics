@@ -66,13 +66,15 @@ public class BetterAerodynamicsClient implements ClientModInitializer {
             double lift = ElytraPhysics.lastLiftLbf;
             double drag = ElytraPhysics.lastDragLbf;
             boolean stalled = ElytraPhysics.lastStalled;
+            double bank = ElytraPhysics.lastBankDeg;
+            double turnRate = ElytraPhysics.lastTurnRateDps;
             if (spd > 1) {
-                LOG.info("FLIGHT Alt={}ft Spd={}ft/s L={}lbf D={}lbf stall={}",
-                    (int)feet, (int)spd, (int)lift, (int)drag, stalled);
+                LOG.info("FLIGHT Alt={}ft Spd={}ft/s L={}lbf D={}lbf stall={} bank={}deg turn={}deg/s",
+                    (int)feet, (int)spd, (int)lift, (int)drag, stalled, (int)bank, (int)turnRate);
             }
 
-            // Overlay: altitude + vertical speed
-            String msg = String.format("Alt %.0f ft    VS %.0f ft/min", feet, vsFtmin);
+            // Overlay: altitude, vertical speed, bank
+            String msg = String.format("Alt %.0f ft    VS %.0f ft/min    B %.0f°", feet, vsFtmin, bank);
             client.player.sendOverlayMessage(Component.literal(msg));
         });
     }

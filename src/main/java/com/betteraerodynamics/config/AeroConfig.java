@@ -34,6 +34,10 @@ public final class AeroConfig {
     public static final double EVEREST_ALTITUDE_FT = 29031.0;
     /** Feet per metre: 1 block = 1 m in CONVENTIONAL mode. */
     public static final double FT_PER_M = 3.28084;
+    /** Default airfoil designation (NACA 2412). */
+    public static final String DEFAULT_NACA = "2412";
+    /** Valid NACA 4-digit designation: exactly four digits 0–9. */
+    public static final String NACA_PATTERN = "\\d{4}";
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
@@ -41,6 +45,7 @@ public final class AeroConfig {
     private static volatile int seaLevelY = 63;
     private static volatile int everestY = 320;
     private static volatile boolean hudEnabled = true;
+    private static volatile String naca4 = DEFAULT_NACA;
 
     private AeroConfig() {}
 
@@ -48,12 +53,16 @@ public final class AeroConfig {
     public static int seaLevelY() { return seaLevelY; }
     public static int everestY() { return everestY; }
     public static boolean hudEnabled() { return hudEnabled; }
+    public static String naca4() { return naca4; }
 
     /** Apply new values from the config screen and persist them. */
-    public static void set(Mode newMode, int newSeaLevelY, int newEverestY) {
+    public static void set(Mode newMode, int newSeaLevelY, int newEverestY, String newNaca4) {
         mode = newMode;
         seaLevelY = newSeaLevelY;
         everestY = newEverestY;
+        if (newNaca4 != null && newNaca4.matches(NACA_PATTERN)) {
+            naca4 = newNaca4;
+        }
         save();
     }
 
@@ -110,8 +119,16 @@ public final class AeroConfig {
             if (json.has("hud")) {
                 hudEnabled = json.get("hud").getAsBoolean();
             }
-            BetterAerodynamics.LOGGER.info("Aero config loaded: mode={}, seaLevelY={}, everestY={}, hud={}",
-                mode, seaLevelY, everestY, hudEnabled);
+            if (json.has("naca4")) {
+                String n = json.get("naca4").getAsString();
+                if (n.matches(NACA_PATTERN)) {
+                    naca4 = n;
+                } else {
+                    BetterAerodynamics.LOGGER.warn("betteraerodynamics.json: invalid naca4 '{}' — using {}", n, DEFAULT_NACA);
+                }
+            }
+            BetterAerodynamics.LOGGER.info("Aero config loaded: mode={}, seaLevelY={}, everestY={}, hud={}, naca4={}",
+                mode, seaLevelY, everestY, hudEnabled, naca4);
         } catch (Exception e) {
             BetterAerodynamics.LOGGER.warn("Could not read betteraerodynamics.json, using defaults", e);
         }
@@ -124,6 +141,7 @@ public final class AeroConfig {
             json.addProperty("seaLevelY", seaLevelY);
             json.addProperty("everestY", everestY);
             json.addProperty("hud", hudEnabled);
+            json.addProperty("naca4", naca4);
             Files.createDirectories(configPath().getParent());
             Files.writeString(configPath(), GSON.toJson(json));
         } catch (Exception e) {

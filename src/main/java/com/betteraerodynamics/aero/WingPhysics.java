@@ -28,15 +28,19 @@ public class WingPhysics {
         double clMax,
         /** Stall angle in RADIANS (pre-converted, no runtime toRadians). */
         double stallAngleRad,
-        double maxLoad
+        double maxLoad,
+        /** Banked-turn gain: rad of bank per rad of heading error (look yaw vs velocity heading). */
+        double bankGain,
+        /** Maximum bank angle in RADIANS — lift tilt limit in turns. */
+        double phiMaxRad
     ) {
         /** Default glider: 10 ft², AR=6. */
         public static final WingConfig GLIDER = new WingConfig(
-            10.0, 6.0, 0.85, 0.008, 1.5, 0.261799, 500.0  // 15° in rad
+            10.0, 6.0, 0.85, 0.008, 1.5, 0.261799, 500.0, 1.5, 0.872665  // 15° stall, 50° max bank
         );
         /** Small aircraft: 25 ft², AR=7. */
         public static final WingConfig SMALL_AIRCRAFT = new WingConfig(
-            25.0, 7.0, 0.80, 0.012, 1.4, 0.244346, 1200.0 // 14° in rad
+            25.0, 7.0, 0.80, 0.012, 1.4, 0.244346, 1200.0, 1.5, 0.698132 // 14° stall, 40° max bank
         );
     }
 
