@@ -1,0 +1,7 @@
+{
+  "type": "betteraerodynamics:seal",
+  "category": "equipment",
+  "material": "minecraft:diamond_helmet",
+  "seal_source": "betteraerodynamics:atmosphere_suit_helmet",
+  "enchantment": "betteraerodynamics:pressure_seal"
+}

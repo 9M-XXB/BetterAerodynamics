@@ -6,7 +6,7 @@
 |------|------|
 | Minecraft | **26.1.2** |
 | Fabric Loader | **0.19.3** |
-| Fabric API | **0.153.0+26.1.2** |
+| Fabric API | **0.154.0+26.1.2** |
 | Java | **25** |
 | Fabric Loom | **1.17-SNAPSHOT** |
 
@@ -468,7 +468,7 @@ minecraft_version=26.1.2       # Minecraft 版本
 loader_version=0.19.3          # Fabric Loader 版本
 loom_version=1.17-SNAPSHOT     # Fabric Loom 版本
 mod_version=1.0.0              # 模组版本号（发布时修改）
-fabric_api_version=0.153.0+26.1.2  # Fabric API 版本
+fabric_api_version=0.154.0+26.1.2  # Fabric API 版本
 ```
 
 ### 常用 Gradle 命令

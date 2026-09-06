@@ -1,0 +1,7 @@
+{
+  "type": "betteraerodynamics:seal",
+  "category": "equipment",
+  "material": "minecraft:diamond_leggings",
+  "seal_source": "betteraerodynamics:atmosphere_suit_leggings",
+  "enchantment": "betteraerodynamics:pressure_seal"
+}

@@ -1,0 +1,7 @@
+{
+  "type": "betteraerodynamics:seal",
+  "category": "equipment",
+  "material": "minecraft:diamond_boots",
+  "seal_source": "betteraerodynamics:atmosphere_suit_boots",
+  "enchantment": "betteraerodynamics:pressure_seal"
+}

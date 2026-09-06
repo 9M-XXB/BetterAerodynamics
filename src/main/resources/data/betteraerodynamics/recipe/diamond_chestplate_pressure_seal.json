@@ -1,0 +1,7 @@
+{
+  "type": "betteraerodynamics:seal",
+  "category": "equipment",
+  "material": "minecraft:diamond_chestplate",
+  "seal_source": "betteraerodynamics:atmosphere_suit_chestplate",
+  "enchantment": "betteraerodynamics:pressure_seal"
+}
