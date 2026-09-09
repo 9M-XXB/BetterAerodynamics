@@ -6,7 +6,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 
-import com.betteraerodynamics.item.PressureSuitItem;
 import com.betteraerodynamics.enchantment.PressureSealEnchantment;
 import com.betteraerodynamics.config.AeroConfig;
 
@@ -92,31 +91,34 @@ public class AtmosphereManager {
         return getTheta(world, player) * T0;
     }
 
-    // ---------- Damage thresholds (imperial base units) ----------
-    private static final double MIN_PRESSURE          = 1200.0;    // lbf/ft^2
-    private static final double MIN_TEMPERATURE_R     = 440.0;     // °R
-    private static final double MIN_DENSITY           = 0.0012;    // slug/ft^3
-
-    private static final double PRESSURE_DMG_PER      = 0.002;     // HP/s per lbf/ft^2
-    private static final double TEMP_DMG_PER          = 0.01;      // HP/s per °R
-    private static final double DENS_DMG_PER          = 900.0;     // HP/s per slug/ft^3
+    // ---------- Low air pressure (altitude sickness) damage ----------
 
     private static final float  MAX_DPS               = 4.0f;
 
-    /** Compute damage per second based on atmospheric thresholds. */
+    /**
+     * Compute low air pressure damage per second from the player's altitude
+     * under the current {@link AeroConfig} conversion, so the threshold follows
+     * the active height mode. Damage ramps linearly from 0 DPS at the
+     * altitude-sickness threshold (default 8,200 ft ≈ 2,500 m, where altitude
+     * sickness begins in real life) up to {@link #MAX_DPS} at Everest altitude
+     * (29,031 ft / 8,848 m — the death zone).
+     *
+     * <p>Reduced by the pressure suit (per-piece + full-set bonus) and the
+     * Pressure Seal enchantment, shared with the water pressure system.
+     */
     public static float computeAtmosphereDamagePerSecond(ServerLevel world, Player player) {
-        double p   = getPressure(world, player);
-        double tr  = getTemperature(world, player);
-        double rho = getDensity(world, player);
+        double altFt = altitudeFeet(world, player);
+        double thresholdFt = AeroConfig.altitudeSicknessFt();
+        if (altFt <= thresholdFt) return 0f;
 
-        double dmg = 0.0;
-        if (p < MIN_PRESSURE)       dmg += (MIN_PRESSURE - p) * PRESSURE_DMG_PER;
-        if (tr < MIN_TEMPERATURE_R) dmg += (MIN_TEMPERATURE_R - tr) * TEMP_DMG_PER;
-        if (rho < MIN_DENSITY)      dmg += (MIN_DENSITY - rho) * DENS_DMG_PER;
+        double spanFt = Math.max(1.0, AeroConfig.EVEREST_ALTITUDE_FT - thresholdFt);
+        double rawDps = MAX_DPS * (altFt - thresholdFt) / spanFt;
 
-        if (dmg <= 0.0) return 0f;
+        // Pressure Seal is the ONLY mitigation (damage bypasses vanilla armor;
+        // the pressure suit grants no damage reduction)
+        float sealReduction = 0f;
+        int sealPieces = 0;
 
-        // Check for atmosphere suit set bonus
         if (player instanceof ServerPlayer sp) {
             ItemStack[] armorSlots = new ItemStack[4];
             var inventory = sp.getInventory();
@@ -124,33 +126,26 @@ public class AtmosphereManager {
             armorSlots[1] = inventory.getItem(37); // chestplate
             armorSlots[2] = inventory.getItem(38); // leggings
             armorSlots[3] = inventory.getItem(39); // boots
-            
-            float reduction = PressureSuitItem.calculateDamageReduction(armorSlots);
-            dmg *= (1.0 - reduction);
-            
-            // Check for Pressure Seal enchantment on armor pieces
-        var enchantmentGetter = world.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-        var pressureSealHolder = enchantmentGetter.getOrThrow(PressureSealEnchantment.ENCHANTMENT_KEY);
 
-        int enchantedPieces = 0;
-        for (ItemStack slot : armorSlots) {
-            int level = EnchantmentHelper.getItemEnchantmentLevel(pressureSealHolder, slot);
-            if (level > 0) {
-                enchantedPieces++;
+            sealReduction = PressureSealEnchantment.calculateDamageReduction(world, armorSlots);
+            var enchantmentGetter = world.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+            var pressureSealHolder = enchantmentGetter.getOrThrow(PressureSealEnchantment.ENCHANTMENT_KEY);
+            for (ItemStack slot : armorSlots) {
+                if (EnchantmentHelper.getItemEnchantmentLevel(pressureSealHolder, slot) > 0) {
+                    sealPieces++;
+                }
             }
         }
 
-        // Apply enchantment damage reduction
-        if (enchantedPieces > 0) {
-            float enchantReduction = enchantedPieces * PressureSealEnchantment.ENCHANT_REDUCTION;
-            if (enchantedPieces == 4) {
-                enchantReduction += PressureSealEnchantment.FULL_SET_ENCHANT_BONUS;
-            }
-            dmg *= (1.0 - enchantReduction);
-        }
+        double finalDps = rawDps * (1.0 - sealReduction);
+
+        if (finalDps > 0.0) {
+            BetterAerodynamics.LOGGER.info(
+                "PRESSURE alt={} ft rawDps={} sealPieces={} sealRed={} finalDps={}",
+                String.format("%.0f", altFt), String.format("%.2f", rawDps),
+                sealPieces, String.format("%.2f", sealReduction), String.format("%.2f", finalDps));
         }
 
-        if (dmg <= 0.0) return 0f;
-        return (float) Math.min(dmg, MAX_DPS);
+        return (float) Math.min(finalDps, MAX_DPS);
     }
 }

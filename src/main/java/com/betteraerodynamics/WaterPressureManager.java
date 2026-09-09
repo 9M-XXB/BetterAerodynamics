@@ -6,10 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 
-import com.betteraerodynamics.item.PressureSuitItem;
 import com.betteraerodynamics.enchantment.PressureSealEnchantment;
 
 /**
@@ -91,8 +88,9 @@ public class WaterPressureManager {
     /**
      * Compute water pressure damage per second.
      * Only applies when the player is fully submerged (oxygen bar visible).
-     * Uses the same damage reduction from the pressure suit and Pressure Retention
-     * enchantment as the atmosphere (low-pressure) system.
+     * Pressure Seal is the ONLY mitigation (shared with the atmosphere
+     * low-pressure system); the damage type bypasses vanilla armor and the
+     * pressure suit grants no damage reduction.
      *
      * @return damage per second in half-hearts (HP)
      */
@@ -104,7 +102,6 @@ public class WaterPressureManager {
 
         double dmg = (pressureATM - DAMAGE_THRESHOLD_ATM) * DMG_PER_ATM;
 
-        // --- damage reduction (shared with atmosphere system) ---
         if (player instanceof ServerPlayer sp) {
             ItemStack[] armorSlots = new ItemStack[4];
             var inventory = sp.getInventory();
@@ -113,25 +110,8 @@ public class WaterPressureManager {
             armorSlots[2] = inventory.getItem(38); // leggings
             armorSlots[3] = inventory.getItem(39); // boots
 
-            float suitReduction = PressureSuitItem.calculateDamageReduction(armorSlots);
-            dmg *= (1.0 - suitReduction);
-
-            var enchantmentGetter = world.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-            var pressureSealHolder = enchantmentGetter.getOrThrow(PressureSealEnchantment.ENCHANTMENT_KEY);
-
-            int enchantedPieces = 0;
-            for (ItemStack slot : armorSlots) {
-                int level = EnchantmentHelper.getItemEnchantmentLevel(pressureSealHolder, slot);
-                if (level > 0) enchantedPieces++;
-            }
-
-            if (enchantedPieces > 0) {
-                float enchantReduction = enchantedPieces * PressureSealEnchantment.ENCHANT_REDUCTION;
-                if (enchantedPieces == 4) {
-                    enchantReduction += PressureSealEnchantment.FULL_SET_ENCHANT_BONUS;
-                }
-                dmg *= (1.0 - enchantReduction);
-            }
+            float sealReduction = PressureSealEnchantment.calculateDamageReduction(world, armorSlots);
+            dmg *= (1.0 - sealReduction);
         }
 
         if (dmg <= 0.0) return 0f;

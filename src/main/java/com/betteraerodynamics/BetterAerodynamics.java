@@ -2,6 +2,7 @@ package com.betteraerodynamics;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
 import net.minecraft.commands.Commands;
 import net.minecraft.core.Registry;
@@ -10,8 +11,12 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -35,6 +40,12 @@ public class BetterAerodynamics implements ModInitializer {
 	public static final Identifier CARBON_FIBER = id("carbon_fiber");
 	public static final Identifier CARBON_FIBER_PLATE = id("carbon_fiber_plate");
 
+	// Low air pressure damage
+	public static final ResourceKey<DamageType> LOW_PRESSURE_DAMAGE_TYPE =
+		ResourceKey.create(Registries.DAMAGE_TYPE, id("low_pressure"));
+	/** Damage is applied once per this many ticks (20 = 1 s), sized in DPS. */
+	private static final int DAMAGE_INTERVAL_TICKS = 20;
+
 	// Registered item instances
 	public static Item pressureSuitHelmet;
 	public static Item pressureSuitChestplate;
@@ -53,15 +64,29 @@ public class BetterAerodynamics implements ModInitializer {
 		registerCreativeTab();
 		com.betteraerodynamics.recipe.AeroRecipes.register();
 
-		/*
-		// ======== STILL DISABLED (kept for later): pressure damage + loot injection ========
+	/*
+	// ======== STILL DISABLED (kept for later): water pressure damage + loot injection ========
 
-		registerLootInjection();
+	registerLootInjection();
+	*/
 
-		ServerTickEvents.END_SERVER_TICK.register(server -> {
-			... low/high pressure damage + water pressure handler, reduces damage via PressureSuitItem ...
-		});
-		*/
+	// Low air pressure damage — altitude sickness model. Threshold/ramp live in AeroConfig and
+	// follow the active height conversion; pressure suit + Pressure Seal reductions are applied
+	// inside AtmosphereManager.computeAtmosphereDamagePerSecond.
+	ServerTickEvents.END_SERVER_TICK.register(server -> {
+		if (!com.betteraerodynamics.config.AeroConfig.lowPressureDamage()) return;
+		if (server.getTickCount() % DAMAGE_INTERVAL_TICKS != 0) return; // once per second
+
+		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+			if (player.isCreative() || player.isSpectator() || !player.isAlive()) continue;
+			ServerLevel level = player.level();
+			float dps = AtmosphereManager.computeAtmosphereDamagePerSecond(level, player);
+			if (dps <= 0f) continue;
+			DamageSource source = level.damageSources().source(LOW_PRESSURE_DAMAGE_TYPE);
+			if (player.isInvulnerableTo(level, source)) continue;
+			player.hurtServer(level, source, dps);
+		}
+	});
 
 		// /aerohud command — toggle the aero HUD display (persisted, same as settings screen)
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {

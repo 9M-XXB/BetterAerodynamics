@@ -38,6 +38,11 @@ public final class AeroConfig {
     public static final String DEFAULT_NACA = "2412";
     /** Valid NACA 4-digit designation: exactly four digits 0–9. */
     public static final String NACA_PATTERN = "\\d{4}";
+    /**
+     * Default low air pressure damage onset: 8,200 ft ≈ 2,500 m — the altitude
+     * above which altitude sickness commonly begins in real life.
+     */
+    public static final int DEFAULT_ALTITUDE_SICKNESS_FT = 8200;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
@@ -46,6 +51,8 @@ public final class AeroConfig {
     private static volatile int everestY = 320;
     private static volatile boolean hudEnabled = true;
     private static volatile String naca4 = DEFAULT_NACA;
+    private static volatile boolean lowPressureDamage = true;
+    private static volatile int altitudeSicknessFt = DEFAULT_ALTITUDE_SICKNESS_FT;
 
     private AeroConfig() {}
 
@@ -54,6 +61,8 @@ public final class AeroConfig {
     public static int everestY() { return everestY; }
     public static boolean hudEnabled() { return hudEnabled; }
     public static String naca4() { return naca4; }
+    public static boolean lowPressureDamage() { return lowPressureDamage; }
+    public static int altitudeSicknessFt() { return altitudeSicknessFt; }
 
     /** Apply new values from the config screen and persist them. */
     public static void set(Mode newMode, int newSeaLevelY, int newEverestY, String newNaca4) {
@@ -127,8 +136,19 @@ public final class AeroConfig {
                     BetterAerodynamics.LOGGER.warn("betteraerodynamics.json: invalid naca4 '{}' — using {}", n, DEFAULT_NACA);
                 }
             }
-            BetterAerodynamics.LOGGER.info("Aero config loaded: mode={}, seaLevelY={}, everestY={}, hud={}, naca4={}",
-                mode, seaLevelY, everestY, hudEnabled, naca4);
+            if (json.has("lowPressureDamage")) {
+                lowPressureDamage = json.get("lowPressureDamage").getAsBoolean();
+            }
+            if (json.has("altitudeSicknessFt")) {
+                int ft = json.get("altitudeSicknessFt").getAsInt();
+                if (ft >= 0) {
+                    altitudeSicknessFt = ft;
+                } else {
+                    BetterAerodynamics.LOGGER.warn("betteraerodynamics.json: negative altitudeSicknessFt {} — using {}", ft, DEFAULT_ALTITUDE_SICKNESS_FT);
+                }
+            }
+            BetterAerodynamics.LOGGER.info("Aero config loaded: mode={}, seaLevelY={}, everestY={}, hud={}, naca4={}, lowPressureDamage={}, altitudeSicknessFt={}",
+                mode, seaLevelY, everestY, hudEnabled, naca4, lowPressureDamage, altitudeSicknessFt);
         } catch (Exception e) {
             BetterAerodynamics.LOGGER.warn("Could not read betteraerodynamics.json, using defaults", e);
         }
@@ -140,8 +160,10 @@ public final class AeroConfig {
             json.addProperty("mode", mode.name());
             json.addProperty("seaLevelY", seaLevelY);
             json.addProperty("everestY", everestY);
-            json.addProperty("hud", hudEnabled);
-            json.addProperty("naca4", naca4);
+        json.addProperty("hud", hudEnabled);
+        json.addProperty("naca4", naca4);
+        json.addProperty("lowPressureDamage", lowPressureDamage);
+        json.addProperty("altitudeSicknessFt", altitudeSicknessFt);
             Files.createDirectories(configPath().getParent());
             Files.writeString(configPath(), GSON.toJson(json));
         } catch (Exception e) {

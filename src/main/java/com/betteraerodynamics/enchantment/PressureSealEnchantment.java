@@ -30,6 +30,31 @@ public class PressureSealEnchantment {
     public static final float FULL_SET_ENCHANT_BONUS = 0.20f;
 
     /**
+     * Total pressure-damage reduction from Pressure Seal pieces worn.
+     * Per piece −15%, full set +20% (total 65%), capped at 100%.
+     * This is the ONLY mitigation applied to pressure damage — the pressure
+     * damage types bypass vanilla armor via the data/minecraft/tags/damage_type/bypasses_armor.json
+     * tag, and the pressure suit grants no damage reduction.
+     *
+     * @param armorSlots array of 4 ItemStacks (helmet, chestplate, leggings, boots)
+     */
+    public static float calculateDamageReduction(net.minecraft.server.level.ServerLevel world,
+                                                 net.minecraft.world.item.ItemStack[] armorSlots) {
+        var holder = world.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(ENCHANTMENT_KEY);
+        int pieces = 0;
+        for (net.minecraft.world.item.ItemStack slot : armorSlots) {
+            if (net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(holder, slot) > 0) {
+                pieces++;
+            }
+        }
+        float reduction = pieces * ENCHANT_REDUCTION;
+        if (pieces == 4) {
+            reduction += FULL_SET_ENCHANT_BONUS;
+        }
+        return Math.min(reduction, 1.0f);
+    }
+
+    /**
      * Build the Pressure Seal enchantment using the new Builder API.
      * This creates an Enchantment definition for armor slots.
      */
